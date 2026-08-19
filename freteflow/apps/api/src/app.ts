@@ -1,5 +1,5 @@
 import express from "express";
-import cors from "cors"; // 👉 1. Importação do cors adicionada aqui
+import cors from "cors";
 import cookieParser from "cookie-parser";
 import { prisma } from "./config/prisma.js";
 import authRoutes from "./routes/auth.routes.js";
@@ -20,18 +20,23 @@ import { securityMiddleware } from "./middleware/security.middleware.js";
 
 const app = express();
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:8081",
+  "https://freteflow-seven.vercel.app",
+  ...(process.env.CORS_ORIGIN ? [process.env.CORS_ORIGIN] : []),
+];
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173", // Permite o Painel Web
-      "http://localhost:8081", // Permite o App Mobile
-    ],
-    credentials: true, // Permite o envio de cookies/tokens entre as portas
+    origin: allowedOrigins,
+    credentials: true,
   }),
 );
 app.use(...securityMiddleware);
 app.use(express.json({ limit: "100kb" }));
 app.use(cookieParser());
+
 app.use("/api/auth", authRoutes);
 app.use(
   "/api/clients",
