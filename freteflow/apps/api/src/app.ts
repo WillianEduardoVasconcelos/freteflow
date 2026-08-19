@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors"; // 👉 1. Importação do cors adicionada aqui
 import cookieParser from "cookie-parser";
 import { prisma } from "./config/prisma.js";
 import authRoutes from "./routes/auth.routes.js";
@@ -19,6 +20,15 @@ import { securityMiddleware } from "./middleware/security.middleware.js";
 
 const app = express();
 
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173", // Permite o Painel Web
+      "http://localhost:8081", // Permite o App Mobile
+    ],
+    credentials: true, // Permite o envio de cookies/tokens entre as portas
+  }),
+);
 app.use(...securityMiddleware);
 app.use(express.json({ limit: "100kb" }));
 app.use(cookieParser());

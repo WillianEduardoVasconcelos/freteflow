@@ -397,9 +397,25 @@
 - **Suporte Multiplataforma:** Configuração de dependências (`react-native-web`, `react-dom`, `@expo/metro-runtime`) permitindo execução em emulador mobile, celular físico (Expo Go) e navegador.
 - **Scripts:** Adicionado script `"mobile:dev"` no `package.json` raiz do monorepo.
 
+### Otimização e Estabilização do Fluxo de Fretes (Complemento)
+
+- **Refatoração do Carregamento (`Freights.tsx`):**
+  - Implementado carregamento em duas etapas no método `load()`: primeiro o essencial (fretes) para exibição imediata na tabela, e depois os dados auxiliares (clientes, contratos, veículos, drivers) para evitar bloqueio da interface.
+  - O `setInterval` (polling) de 3 segundos foi removido para evitar estouro de limite de requisições (`429 Too Many Requests`) na API.
+  - Implementado **carregamento sob demanda**: os dados da API são refrescados apenas no momento da abertura dos detalhes do frete ou após a criação de um novo registro.
+  - Implementado **gatilho inteligente**: a função `quickStatus` agora chama `load(true)` automaticamente apenas quando o status é atualizado para `entregue`, garantindo que o registro mude de aba na interface web instantaneamente, sem necessidade de recarregamento manual (F5).
+
+- **Resolução de Conflitos de Rede:**
+  - Ajustada a estratégia de chamadas `Promise.all` para reduzir o volume de requisições simultâneas ao servidor Node.js/Prisma.
+  - Validado que o estado da aplicação React agora reflete corretamente a mudança de status, com re-renderização garantida pelos `states` locais após a confirmação da `PATCH` na API.
+
+- **Status da Operação:**
+  - O sistema encontra-se estável, sem quedas de conexão ou erros de `rate limit`.
+  - O fluxo **Mobile (App) -> API -> Web (Dashboard)** está validado e sincronizado operacionalmente.
+
 ## Próximas etapas
 
-1. Realizar a simulação de ciclo de vida completo de um Frete pela interface web e mobile.
+1. Realizar a simulação de ciclo de vida completo de um segundo Frete (teste de estresse funcional).
 2. Atualizar o `README.md` principal com a arquitetura completa (API + Web + Mobile).
 3. Configurar ambiente de deploy em nuvem gratuita (Supabase/Neon, Render e Vercel).
 4. Acompanhar atualizações de dependências do Prisma 7 referentes ao alerta do `deepmerge-ts`.

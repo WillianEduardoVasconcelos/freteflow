@@ -26,6 +26,7 @@ const emptyForm = {
   veiculoId: "",
   motoristaId: "",
 };
+
 const labels: Record<FreightStatus, string> = {
   pendente: "Pendente",
   em_transito: "Em trânsito",
@@ -50,32 +51,39 @@ export default function Freights() {
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  async function load() {
-    setLoading(true);
+  async function load(isSilent = false) {
+    if (!isSilent) setLoading(true);
     setError(null);
     try {
-      const [freightData, clientData, contractData, vehicleData, driverData] =
+      // Carrega apenas o essencial para a tabela não quebrar
+      const freightData = await apiRequest<Freight[]>("/api/freights");
+      setFreights(freightData);
+
+      // Carrega o resto depois, sem bloquear a interface
+      const [clientData, contractData, vehicleData, driverData] =
         await Promise.all([
-          apiRequest<Freight[]>("/api/freights"),
           apiRequest<Client[]>("/api/clients"),
           apiRequest<Contract[]>("/api/contracts"),
           apiRequest<Vehicle[]>("/api/vehicles"),
           apiRequest<Driver[]>("/api/drivers"),
         ]);
-      setFreights(freightData);
+
       setClients(clientData);
       setContracts(contractData);
       setVehicles(vehicleData);
       setDrivers(driverData);
     } catch (requestError) {
-      setError(readError(requestError));
+      if (!isSilent) setError(readError(requestError));
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   }
+
+  /// Carrega os dados apenas quando a tela é aberta ou o frete selecionado muda
   useEffect(() => {
     void load();
-  }, []);
+  }, [selected?.id]);
+
   async function createFreight(event: FormEvent) {
     event.preventDefault();
     setSaving(true);
@@ -104,20 +112,32 @@ export default function Freights() {
       setSaving(false);
     }
   }
+
   async function openDetails(freight: Freight) {
     setSelected(freight);
     setError(null);
     try {
-      const [trackingData, occurrenceData] = await Promise.all([
-        apiRequest<TrackingPoint[]>(`/api/tracking/${freight.id}`),
-        apiRequest<Occurrence[]>(`/api/occurrences/${freight.id}`),
-      ]);
+      const [trackingData, occurrenceData, latestFreightList] =
+        await Promise.all([
+          apiRequest<TrackingPoint[]>(`/api/tracking/${freight.id}`),
+          apiRequest<Occurrence[]>(`/api/occurrences/${freight.id}`),
+          apiRequest<Freight[]>("/api/freights"),
+        ]);
       setTracking(trackingData);
       setOccurrences(occurrenceData);
+      setFreights(latestFreightList);
+
+      const updatedSelected = latestFreightList.find(
+        (f) => f.id === freight.id,
+      );
+      if (updatedSelected) {
+        setSelected(updatedSelected);
+      }
     } catch (requestError) {
       setError(readError(requestError));
     }
   }
+
   async function quickStatus(freight: Freight, status: FreightStatus) {
     setSaving(true);
     try {
@@ -131,19 +151,27 @@ export default function Freights() {
         ),
       );
       if (selected?.id === freight.id) setSelected({ ...freight, ...updated });
+
+      // GATILHO INTELIGENTE: Se mudou para 'entregue', recarrega a lista para mudar de aba na web
+      if (status === "entregue") {
+        await load(true);
+      }
     } catch (requestError) {
       setError(readError(requestError));
     } finally {
       setSaving(false);
     }
   }
+
   const visible =
     filter === "todos"
       ? freights
       : freights.filter((freight) => freight.status === filter);
+
   const selectedContract = contracts.find(
     (contract) => contract.id === Number(form.contratoId),
   );
+
   const driversForVehicle = drivers.filter((driver) =>
     driver.veiculos.some((vehicle) => vehicle.id === Number(form.veiculoId)),
   );
@@ -267,6 +295,7 @@ export default function Freights() {
           </div>
         )}
       </section>
+
       {modalOpen && (
         <Modal
           title="Novo frete"
@@ -450,11 +479,15 @@ export default function Freights() {
           </form>
         </Modal>
       )}
+
       {selected && (
         <Modal
           title={selected.numero_frete}
           eyebrow="Detalhes do frete"
-          onClose={() => setSelected(null)}
+          onClose={() => {
+            setSelected(null);
+            void load(true);
+          }}
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="detail-block">
@@ -526,6 +559,7 @@ export default function Freights() {
     </div>
   );
 }
+
 function readError(error: unknown) {
   return error && typeof error === "object" && "error" in error
     ? String(error.error)

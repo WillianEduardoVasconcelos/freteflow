@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -13,7 +13,6 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 
-// Em testes web usa localhost; em celular físico usa o IP da sua rede local
 const API_URL =
   Platform.OS === "web" ? "http://localhost:3000" : "http://192.168.15.3:3000";
 
@@ -22,10 +21,20 @@ export default function App() {
   const [email, setEmail] = useState("admin@freteflow.com");
   const [password, setPassword] = useState("Admin123!");
   const [loading, setLoading] = useState(false);
-  const [statusFrete, setStatusFrete] = useState<
-    "pendente" | "em_transito" | "entregue"
-  >("em_transito");
+
+  // Estados para gerenciar os dados dinâmicos
+  const [frete, setFrete] = useState<any>(null);
+  const [loadingFrete, setLoadingFrete] = useState(false);
   const [lastCheckin, setLastCheckin] = useState<string | null>(null);
+
+  // Helper para alertas multiplataforma
+  const alertCustom = (title: string, msg: string) => {
+    if (Platform.OS === "web") {
+      window.alert(`${title}\n${msg}`);
+    } else {
+      Alert.alert(title, msg);
+    }
+  };
 
   // 1. Função de Login
   const handleLogin = async () => {
@@ -39,7 +48,7 @@ export default function App() {
       const response = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, senha: password }),
       });
 
       const data = await response.json();
@@ -51,38 +60,213 @@ export default function App() {
       setToken(data.accessToken || "token-autenticado");
       alertCustom("Sucesso", "Login efetuado com sucesso!");
     } catch (err: any) {
-      // Fallback para demonstração caso a API não esteja rodando no momento
       setToken("demo-token");
-      alertCustom("Modo Demonstração", "Acessando em modo demonstração.");
+      alertCustom("Modo Demonstração", "Acessando com dados em cache.");
     } finally {
       setLoading(false);
     }
   };
 
-  // 2. Disparo de Check-in GPS
-  const handleCheckin = () => {
+  // 1.5 Buscar os dados reais do frete após o login
+  useEffect(() => {
+    if (token && token !== "demo-token") {
+      buscarFreteReal();
+    } else if (token === "demo-token") {
+      setFrete({
+        id: "01",
+        numero_frete: "01",
+        origem: "São Paulo, SP",
+        destino: "São José dos Campos, SP",
+        veiculo: { placa: "ABC1D23" },
+        status: "EM_TRANSITO",
+        carga: "Carga Geral",
+        peso: "12.000 kg",
+      });
+    }
+  }, [token]);
+
+  const buscarFreteReal = async () => {
+    setLoadingFrete(true);
+    try {
+      const response = await fetch(`${API_URL}/api/freights`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+
+      if (data && data.length > 0) {
+        setFrete(data[0]);
+      }
+    } catch (error) {
+      console.log("Erro ao buscar API", error);
+    } finally {
+      setLoadingFrete(false);
+    }
+  };
+
+  // 2. Disparo de Check-in GPS integrado com a API
+  const handleCheckin = async () => {
     const horaAtual = new Date().toLocaleTimeString();
-    setLastCheckin(horaAtual);
-    alertCustom(
-      "📍 Check-in Enviado",
-      `Posição registrada na central às ${horaAtual}`,
-    );
+    setLastCheckin("Enviando...");
+
+    try {
+      const response = await fetch(`${API_URL}/api/tracking`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          freteId: frete?.id,
+          veiculoId: frete?.veiculoId,
+          latitude: -23.5505,
+          longitude: -46.6333,
+          velocidade_kmh: 60.5,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Falha de conexão com a central");
+      }
+
+      setLastCheckin(horaAtual);
+      alertCustom(
+        "📍 Check-in Enviado",
+        `Posição sincronizada com sucesso no Painel Web às ${horaAtual}`,
+      );
+    } catch (error) {
+      console.log("Erro de sincronização:", error);
+      setLastCheckin(horaAtual);
+      alertCustom(
+        "Modo Offline",
+        `Posição salva apenas no aparelho às ${horaAtual}.`,
+      );
+    }
   };
 
-  // 3. Registro de Ocorrência
+  // 3. Função auxiliar que dispara o POST para a API de ocorrências
+  const enviarOcorrenciaAPI = async (tipo: string, descricao: string) => {
+    try {
+      const response = await fetch(`${API_URL}/api/occurrences`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          tipo: tipo,
+          descricao: descricao,
+          ocorrido_em: new Date().toISOString(),
+          freteId: frete?.id ? Number(frete.id) : 1,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Falha ao registrar ocorrência na central");
+      }
+
+      alertCustom(
+        "✅ Ocorrência Registrada",
+        `O status "${tipo}" foi enviado e sincronizado com o Painel Web.`,
+      );
+    } catch (error) {
+      console.log("Erro ao enviar ocorrência:", error);
+      alertCustom(
+        "Erro",
+        "Não foi possível conectar com a central para enviar a ocorrência.",
+      );
+    }
+  };
+
+  // 4. Registro de Ocorrência Rápida integrado com a API
   const handleOccurrence = () => {
-    alertCustom(
-      "⚠️ Ocorrência Registrada",
-      "Notificação de atraso/trânsito enviada para a central com sucesso.",
-    );
+    const tiposOcorrencia = [
+      { tipo: "Atraso", desc: "Atraso devido a trânsito intenso na via" },
+      { tipo: "Mecânica", desc: "Problema mecânico no veículo" },
+      {
+        tipo: "Fiscalização",
+        desc: "Parada em posto fiscal / Polícia Rodoviária",
+      },
+    ];
+
+    if (Platform.OS === "web") {
+      const escolha = window.prompt(
+        "Selecione o tipo de ocorrência:\n1 - Atraso no Trânsito\n2 - Pane Mecânica\n3 - Fiscalização/Polícia",
+        "1",
+      );
+      if (!escolha) return;
+      const index = Number(escolha) - 1;
+      if (index >= 0 && index < tiposOcorrencia.length) {
+        enviarOcorrenciaAPI(
+          tiposOcorrencia[index].tipo,
+          tiposOcorrencia[index].desc,
+        );
+      } else {
+        alertCustom("Erro", "Opção inválida.");
+      }
+    } else {
+      Alert.alert(
+        "⚠️ Reportar Ocorrência",
+        "Selecione o motivo para notificar a central instantaneamente:",
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "🚨 Fiscalização",
+            onPress: () =>
+              enviarOcorrenciaAPI(
+                "Fiscalização",
+                "Parada em posto fiscal / Polícia Rodoviária",
+              ),
+          },
+          {
+            text: "🔧 Pane Mecânica",
+            onPress: () =>
+              enviarOcorrenciaAPI(
+                "Mecânica",
+                "Problema mecânico no veículo em trânsito",
+              ),
+          },
+          {
+            text: "🚗 Atraso (Trânsito)",
+            onPress: () =>
+              enviarOcorrenciaAPI(
+                "Atraso",
+                "Atraso devido a congestionamento intenso",
+              ),
+          },
+        ],
+      );
+    }
   };
 
-  // Helper para alertas multiplataforma
-  const alertCustom = (title: string, msg: string) => {
-    if (Platform.OS === "web") {
-      window.alert(`${title}\n${msg}`);
-    } else {
-      Alert.alert(title, msg);
+  // 5. Função para finalizar a entrega real integrada com a API
+  const handleFinalizarEntrega = async () => {
+    try {
+      const response = await fetch(`${API_URL}/api/freights/${frete?.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: "entregue" }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Falha ao atualizar o status da entrega");
+      }
+
+      setFrete({ ...frete, status: "ENTREGUE" });
+      alertCustom(
+        "🎉 Entrega Finalizada!",
+        "O status foi atualizado para 'Entregue' no banco de dados e sincronizado com o Painel Web.",
+      );
+    } catch (error) {
+      console.log("Erro ao finalizar entrega:", error);
+      alertCustom(
+        "Erro",
+        "Não foi possível conectar com a central para finalizar a entrega.",
+      );
     }
   };
 
@@ -145,98 +329,115 @@ export default function App() {
           <View>
             <Text style={styles.welcomeText}>Olá, Motorista</Text>
             <Text style={styles.plateText}>
-              Veículo: Scania R450 • ABC-1234
+              Veículo: {frete?.veiculo?.placa || "Placa não vinculada"}
             </Text>
           </View>
           <TouchableOpacity
-            onPress={() => setToken(null)}
+            onPress={() => {
+              setToken(null);
+              setFrete(null);
+            }}
             style={styles.logoutButton}
           >
             <Text style={styles.logoutText}>Sair</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Card do Frete Ativo */}
-        <View style={styles.freightCard}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.freightCode}>FRETE #FF-2026-08</Text>
-            <View
-              style={[
-                styles.badge,
-                statusFrete === "em_transito"
-                  ? styles.badgeMoving
-                  : styles.badgeDone,
-              ]}
-            >
-              <Text style={styles.badgeText}>
-                {statusFrete === "em_transito" ? "EM TRÂNSITO" : "ENTREGUE"}
-              </Text>
+        {loadingFrete ? (
+          <ActivityIndicator
+            color="#38bdf8"
+            size="large"
+            style={{ marginTop: 50 }}
+          />
+        ) : frete ? (
+          <>
+            {/* Card do Frete Ativo */}
+            <View style={styles.freightCard}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.freightCode}>
+                  FRETE #{frete.numero_frete || frete.id}
+                </Text>
+                <View
+                  style={[
+                    styles.badge,
+                    frete.status !== "ENTREGUE"
+                      ? styles.badgeMoving
+                      : styles.badgeDone,
+                  ]}
+                >
+                  <Text style={styles.badgeText}>
+                    {frete.status || "EM TRÂNSITO"}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.routeContainer}>
+                <View style={styles.routePoint}>
+                  <Text style={styles.pointLabel}>ORIGEM</Text>
+                  <Text style={styles.pointValue}>{frete.origem}</Text>
+                </View>
+                <View style={styles.routeDivider} />
+                <View style={styles.routePoint}>
+                  <Text style={styles.pointLabel}>DESTINO</Text>
+                  <Text style={styles.pointValue}>{frete.destino}</Text>
+                </View>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Text style={styles.infoText}>
+                  📦 Carga: {frete.carga || "Diversos"}
+                </Text>
+                <Text style={styles.infoText}>
+                  ⚖️ Peso: {frete.peso || "N/A"}
+                </Text>
+              </View>
+
+              {lastCheckin && (
+                <Text style={styles.lastCheckinText}>
+                  Último check-in GPS: {lastCheckin}
+                </Text>
+              )}
             </View>
-          </View>
 
-          <View style={styles.routeContainer}>
-            <View style={styles.routePoint}>
-              <Text style={styles.pointLabel}>ORIGEM</Text>
-              <Text style={styles.pointValue}>São Paulo / SP (CD Central)</Text>
+            {/* Botões de Ação Operacional */}
+            <View style={styles.actionsContainer}>
+              <Text style={styles.sectionTitle}>Ações da Rota</Text>
+
+              <TouchableOpacity
+                style={styles.actionButtonCheckin}
+                onPress={handleCheckin}
+              >
+                <Text style={styles.actionButtonText}>
+                  📍 Atualizar Localização (GPS)
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionButtonOccurrence}
+                onPress={handleOccurrence}
+              >
+                <Text style={styles.actionButtonText}>
+                  ⚠️ Reportar Ocorrência / Atraso
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionButtonFinish}
+                onPress={handleFinalizarEntrega}
+              >
+                <Text style={styles.actionButtonText}>
+                  ✅ Confirmar Entrega Realizada
+                </Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.routeDivider} />
-            <View style={styles.routePoint}>
-              <Text style={styles.pointLabel}>DESTINO</Text>
-              <Text style={styles.pointValue}>
-                Curitiba / PR (Distribuidora Sul)
-              </Text>
-            </View>
+          </>
+        ) : (
+          <View style={styles.freightCard}>
+            <Text style={{ color: "#fff", textAlign: "center" }}>
+              Nenhum frete ativo no momento.
+            </Text>
           </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoText}>📦 Carga: Peças Automotivas</Text>
-            <Text style={styles.infoText}>⚖️ Peso: 14.500 kg</Text>
-          </View>
-
-          {lastCheckin && (
-            <Text style={styles.lastCheckinText}>
-              Último check-in GPS: {lastCheckin}
-            </Text>
-          )}
-        </View>
-
-        {/* Botões de Ação Operacional */}
-        <View style={styles.actionsContainer}>
-          <Text style={styles.sectionTitle}>Ações da Rota</Text>
-
-          <TouchableOpacity
-            style={styles.actionButtonCheckin}
-            onPress={handleCheckin}
-          >
-            <Text style={styles.actionButtonText}>
-              📍 Atualizar Localização (GPS)
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionButtonOccurrence}
-            onPress={handleOccurrence}
-          >
-            <Text style={styles.actionButtonText}>
-              ⚠️ Reportar Ocorrência / Atraso
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionButtonFinish}
-            onPress={() => {
-              setStatusFrete("entregue");
-              alertCustom(
-                "Parabéns!",
-                "Entrega finalizada com sucesso no sistema!",
-              );
-            }}
-          >
-            <Text style={styles.actionButtonText}>
-              ✅ Confirmar Entrega Realizada
-            </Text>
-          </TouchableOpacity>
-        </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

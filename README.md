@@ -85,8 +85,6 @@ freteflow/
 └── README.md
 ```
 
----
-
 ## 4. Estado Atual do Projeto
 
 - **Banco de Dados:** PostgreSQL configurado e sincronizado via Prisma ORM com migrações aplicadas.
@@ -116,7 +114,7 @@ cd freteflow
 npm install
 ```
 
-### 2. Configurar o Banco de Dados e Executar o Seed
+# 2. Configurar o Banco de Dados e Executar o Seed
 
 ```bash
 # Executa as migrações do Prisma
@@ -143,8 +141,8 @@ npm run mobile:dev
 
 > **Para testar o App Mobile:**
 >
-> - Pressione **`w`** no terminal do Expo para testar no navegador.
-> - Ou escaneie o **QR Code** pelo app **Expo Go** no celular.
+> - Pressione **`w`** no terminal do Expo para testar no navegador[cite: 6].
+> - Ou escaneie o **QR Code** pelo app **Expo Go** no celular[cite: 6].
 
 ---
 
@@ -158,21 +156,21 @@ npm run mobile:dev
 
 ## 6. Endpoints Principais da API
 
-- **Autenticação & 2FA:** `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `POST /api/auth/2fa/setup`, `POST /api/auth/2fa/verify`
-- **Cadastros Operacionais:** `/api/vehicles`, `/api/drivers`, `/api/clients`, `/api/contracts`
-- **Logística & Fretes:** `/api/freights` (listagem, despacho e entrega)
-- **Telemetria & Operação:** `/api/tracking` (checkpoints GPS), `/api/occurrences` (registro/resolução), `/api/documents`
+- **Autenticação & 2FA:** `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `POST /api/auth/2fa/setup`, `POST /api/auth/2fa/verify`[cite: 6]
+- **Cadastros Operacionais:** `/api/vehicles`, `/api/drivers`, `/api/clients`, `/api/contracts`[cite: 6]
+- **Logística & Fretes:** `/api/freights` (listagem, despacho e entrega)[cite: 6]
+- **Telemetria & Operação:** `/api/tracking` (checkpoints GPS), `/api/occurrences` (registro/resolução), `/api/documents`[cite: 6]
 
 ---
 
 ## 7. Próximos Passos
 
-1. **Deploy em Nuvem:** Hospedagem da API no Render, Web na Vercel e PostgreSQL gerenciado no Supabase/Neon.
-2. **Integração em Tempo Real:** Conexão contínua do App Mobile enviando coordenadas geográficas reais para o Dashboard Web.
-3. **CI/CD Automatizado:** Pipeline no GitHub Actions para validação e testes automáticos a cada commit.
+1. **Deploy em Nuvem:** Hospedagem da API no Render, Web na Vercel e PostgreSQL gerenciado no Supabase/Neon[cite: 6].
+2. **Integração em Tempo Real:** Conexão contínua do App Mobile enviando coordenadas geográficas reais para o Dashboard Web[cite: 6].
+3. **CI/CD Automatizado:** Pipeline no GitHub Actions para validação e testes automáticos a cada commit[cite: 6].
 
 ---
 
-**Autor:** Tech Lead  
-**Última Atualização:** 2026-08-19  
-**Versão:** 1.2.0
+**Autor:** Tech Lead[cite: 6]  
+**Última Atualização:** 2026-08-19[cite: 6]  
+**Versão:** 1.2.0[cite: 6]
