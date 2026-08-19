@@ -1,0 +1,44 @@
+{
+  "name": "freteflow",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prisma:validate": "prisma validate",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "tsx apps/api/prisma/seed.ts",
+    "api:dev": "tsx apps/api/src/server.ts",
+    "web:dev": "vite apps/web",
+    "web:build": "vite build apps/web",
+    "test": "tsx --test apps/api/src/veiculo.test.ts apps/api/src/motorista.test.ts apps/api/src/motorista-crud.test.ts apps/api/src/cliente.test.ts apps/api/src/cliente-crud.test.ts apps/api/src/contrato.test.ts apps/api/src/contrato-crud.test.ts apps/api/src/security.test.ts apps/api/src/auth.test.ts apps/api/src/validation.test.ts apps/api/src/audit.test.ts apps/api/src/csrf.test.ts apps/api/src/frete.test.ts apps/api/src/operational-support.test.ts"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "7.9.1",
+    "@prisma/client": "7.9.1",
+    "@tailwindcss/vite": "^4.1.12",
+    "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.3.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.3",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^7.18.2",
+    "speakeasy": "^2.0.0",
+    "zod": "^4.1.12",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.4",
+    "prisma": "7.9.1",
+    "supertest": "^7.1.4",
+    "tsx": "^4.19.3",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.3"
+  }
+}

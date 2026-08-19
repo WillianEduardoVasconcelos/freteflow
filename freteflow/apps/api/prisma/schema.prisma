@@ -1,0 +1,313 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Veiculo {
+  id                Int             @id @default(autoincrement())
+  vehicle_id        String          @unique @default(uuid()) @db.Uuid
+  placa             String          @unique @db.VarChar(10)
+  modelo            String          @db.VarChar(50)
+  marca             String          @db.VarChar(50)
+  ano_fabricacao    Int
+  cor               String          @db.VarChar(20)
+  chassis           String          @unique @db.VarChar(50)
+  categoria         String          @db.VarChar(30)
+  ultima_revisao    DateTime?       @db.Date
+  tipo_combustivel  String          @db.VarChar(15)
+  capacidade_tanque Float           @db.Real
+  capacidade_peso   Float?          @db.Real
+  capacidade_volume Float?          @db.Real
+  quilometragem     Int             @default(0)
+  status            String          @default("ativo") @db.VarChar(10)
+  criado_em         DateTime        @default(now())
+  atualizado_em     DateTime        @updatedAt
+
+  motoristas        Motorista[]
+  rotas             Rota[]
+  fretes            Frete[]
+  manutencoes       Manutencao[]
+  abastecimentos    Abastecimento[]
+  rastreamentos     Rastreamento[]
+
+  @@index([placa], map: "idx_veiculo_placa")
+  @@index([modelo, marca], map: "idx_veiculo_modelo_marca")
+}
+
+model Motorista {
+  id           Int       @id @default(autoincrement())
+  nome         String    @db.VarChar(100)
+  numero_cnh   String    @unique @db.VarChar(20)
+  validade_cnh DateTime  @db.Date
+  status       String    @default("ativo") @db.VarChar(10)
+  criado_em    DateTime  @default(now())
+  atualizado_em DateTime @updatedAt
+
+  veiculos     Veiculo[]
+  fretes       Frete[]
+
+  @@index([nome], map: "idx_motorista_nome")
+}
+
+model Cliente {
+  id           Int       @id @default(autoincrement())
+  nome         String    @db.VarChar(120)
+  documento    String    @unique @db.VarChar(20)
+  email        String?   @db.VarChar(160)
+  telefone     String?   @db.VarChar(30)
+  status       String    @default("ativo") @db.VarChar(10)
+  criado_em    DateTime  @default(now())
+  atualizado_em DateTime @updatedAt
+
+  contratos    Contrato[]
+  fretes       Frete[]
+}
+
+model Contrato {
+  id              Int       @id @default(autoincrement())
+  numero_contrato String    @unique @db.VarChar(50)
+  data_inicio     DateTime  @db.Date
+  data_fim        DateTime  @db.Date
+  status          String    @default("ativo") @db.VarChar(20)
+  clienteId       Int
+  cliente         Cliente   @relation(fields: [clienteId], references: [id])
+  criado_em       DateTime  @default(now())
+  atualizado_em   DateTime  @updatedAt
+
+  rotas           Rota[]
+  fretes          Frete[]
+
+  @@index([numero_contrato], map: "idx_contrato_numero_contrato")
+  @@index([clienteId, status])
+}
+
+model Rota {
+  id                Int       @id @default(autoincrement())
+  numero_rota       String    @unique @db.VarChar(50)
+  origem            String    @db.VarChar(255)
+  destino           String    @db.VarChar(255)
+  capacidade        Int
+  capacidade_peso   Float?    @db.Real
+  capacidade_volume Float?    @db.Real
+  distancia_km      Float?    @db.Real
+  janela_inicio     DateTime? @db.Timestamp(6)
+  janela_fim        DateTime? @db.Timestamp(6)
+  restricoes_trf    String?   @db.VarChar(255)
+  status            String    @default("planejada") @db.VarChar(20)
+  veiculoId         Int
+  veiculo           Veiculo   @relation(fields: [veiculoId], references: [id])
+  contratoId        Int
+  contrato          Contrato  @relation(fields: [contratoId], references: [id])
+  criado_em         DateTime  @default(now())
+  atualizado_em     DateTime  @updatedAt
+
+  fretes            Frete[]
+
+  @@index([numero_rota], map: "idx_rota_numero_rota")
+  @@index([veiculoId, status])
+}
+
+model Frete {
+  id                 Int                    @id @default(autoincrement())
+  numero_frete       String                 @unique @db.VarChar(50)
+  origem             String                 @db.VarChar(255)
+  destino            String                 @db.VarChar(255)
+  peso_kg            Float?                 @db.Real
+  volume_m3          Float?                 @db.Real
+  valor_frete        Decimal                @db.Decimal(12, 2)
+  status             String                 @default("pendente") @db.VarChar(20)
+  localizacao_lat    Decimal?               @db.Decimal(10, 7)
+  localizacao_lng    Decimal?               @db.Decimal(10, 7)
+  previsao_entrega   DateTime?
+  entregue_em        DateTime?
+  despachado_em      DateTime?
+  cancelado_em       DateTime?
+  motivo_cancelamento String?               @db.VarChar(255)
+  veiculoId          Int
+  veiculo            Veiculo                @relation(fields: [veiculoId], references: [id])
+  motoristaId        Int?
+  motorista          Motorista?             @relation(fields: [motoristaId], references: [id])
+  contratoId         Int
+  contrato           Contrato               @relation(fields: [contratoId], references: [id])
+  clienteId          Int
+  cliente            Cliente                @relation(fields: [clienteId], references: [id])
+  rotaId             Int?
+  rota               Rota?                  @relation(fields: [rotaId], references: [id])
+  criado_em          DateTime               @default(now())
+  atualizado_em      DateTime               @updatedAt
+
+  rastreamentos      Rastreamento[]
+  ocorrencias        Ocorrencia[]
+  documentos         Documento[]
+  financeiro         LancamentoFinanceiro?
+
+  @@index([status, previsao_entrega])
+  @@index([veiculoId, status])
+  @@index([contratoId, clienteId])
+}
+
+model Abastecimento {
+  id                   Int       @id @default(autoincrement())
+  numero_abastecimento String    @unique @db.VarChar(50)
+  data_abastecimento   DateTime  @db.Date
+  quilometragem        Int
+  quantidade            Float     @db.Real
+  tipo_combustivel     String    @db.VarChar(50)
+  preco_litro          Decimal   @db.Decimal(10, 3)
+  custo_total          Decimal   @db.Decimal(12, 2)
+  local                String?   @db.VarChar(160)
+  status               String    @default("ativo") @db.VarChar(20)
+  veiculoId            Int
+  veiculo              Veiculo   @relation(fields: [veiculoId], references: [id])
+  criado_em            DateTime  @default(now())
+  atualizado_em        DateTime  @updatedAt
+
+  @@index([numero_abastecimento], map: "idx_abastecimento_numero_abastecimento")
+  @@index([veiculoId, data_abastecimento])
+}
+
+model Manutencao {
+  id                Int       @id @default(autoincrement())
+  tipo              String    @db.VarChar(50)
+  descricao         String?   @db.VarChar(255)
+  data_manutencao   DateTime  @db.Timestamp(6)
+  quilometragem     Int?
+  proxima_data      DateTime? @db.Date
+  proxima_km        Int?
+  custo             Decimal?  @db.Decimal(12, 2)
+  status            String    @default("pendente") @db.VarChar(20)
+  veiculoId         Int
+  veiculo           Veiculo   @relation(fields: [veiculoId], references: [id])
+  criado_em         DateTime  @default(now())
+  atualizado_em     DateTime  @updatedAt
+
+  @@index([veiculoId], map: "idx_manutencao_veiculoId")
+  @@index([status, proxima_data])
+}
+
+model Rastreamento {
+  id             Int       @id @default(autoincrement())
+  latitude       Decimal   @db.Decimal(10, 7)
+  longitude      Decimal   @db.Decimal(10, 7)
+  velocidade_kmh Float?    @db.Real
+  registrado_em  DateTime  @default(now())
+  freteId        Int
+  frete          Frete     @relation(fields: [freteId], references: [id])
+  veiculoId      Int
+  veiculo        Veiculo   @relation(fields: [veiculoId], references: [id])
+
+  @@index([freteId, registrado_em])
+  @@index([veiculoId, registrado_em])
+}
+
+model Ocorrencia {
+  id                 Int       @id @default(autoincrement())
+  tipo               String    @db.VarChar(40)
+  descricao          String    @db.VarChar(1000)
+  impacto_financeiro Decimal?  @db.Decimal(12, 2)
+  status             String    @default("aberta") @db.VarChar(20)
+  resolucao          String?   @db.VarChar(1000)
+  ocorrido_em        DateTime
+  resolvido_em       DateTime?
+  freteId            Int
+  frete              Frete     @relation(fields: [freteId], references: [id])
+  criado_em          DateTime  @default(now())
+  atualizado_em      DateTime  @updatedAt
+
+  documentos         Documento[]
+
+  @@index([freteId, status])
+}
+
+model Documento {
+  id            Int         @id @default(autoincrement())
+  nome          String      @db.VarChar(160)
+  tipo          String      @db.VarChar(40)
+  url           String      @db.VarChar(500)
+  freteId       Int
+  frete         Frete      @relation(fields: [freteId], references: [id])
+  ocorrenciaId  Int?
+  ocorrencia    Ocorrencia? @relation(fields: [ocorrenciaId], references: [id])
+  criado_em     DateTime    @default(now())
+
+  @@index([freteId, tipo])
+}
+
+model LancamentoFinanceiro {
+  id               Int       @id @default(autoincrement())
+  valor_frete      Decimal   @db.Decimal(12, 2)
+  custo_combustivel Decimal  @default(0) @db.Decimal(12, 2)
+  custo_pedagio    Decimal   @default(0) @db.Decimal(12, 2)
+  custo_motorista  Decimal   @default(0) @db.Decimal(12, 2)
+  multas           Decimal   @default(0) @db.Decimal(12, 2)
+  bonificacoes     Decimal   @default(0) @db.Decimal(12, 2)
+  rentabilidade    Decimal?  @db.Decimal(12, 2)
+  status           String    @default("pendente") @db.VarChar(20)
+  freteId          Int       @unique
+  frete            Frete     @relation(fields: [freteId], references: [id])
+  criado_em        DateTime  @default(now())
+  atualizado_em    DateTime  @updatedAt
+}
+
+model Usuario {
+  id             Int       @id @default(autoincrement())
+  nome           String    @db.VarChar(120)
+  email          String    @unique @db.VarChar(160)
+  senha_hash     String    @db.VarChar(255)
+  perfil         String    @default("operador") @db.VarChar(30)
+  dois_fatores    Boolean   @default(false)
+  dois_fatores_secret String? @db.VarChar(64)
+  ultimo_acesso  DateTime?
+  criado_em      DateTime  @default(now())
+  atualizado_em  DateTime  @updatedAt
+
+  notificacoes   Notificacao[]
+  refresh_tokens RefreshToken[]
+  audit_logs     AuditLog[]
+}
+
+model AuditLog {
+  id          Int       @id @default(autoincrement())
+  acao        String    @db.VarChar(60)
+  recurso     String    @db.VarChar(60)
+  recurso_id  String?   @db.VarChar(80)
+  usuarioId   Int?
+  usuario     Usuario?  @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  ip          String?   @db.VarChar(64)
+  user_agent  String?   @db.VarChar(255)
+  metadata    Json?
+  criado_em   DateTime  @default(now())
+
+  @@index([usuarioId, criado_em])
+  @@index([acao, recurso, criado_em])
+}
+
+model RefreshToken {
+  id          Int       @id @default(autoincrement())
+  token_hash  String    @unique @db.VarChar(128)
+  expires_at  DateTime
+  revoked_at  DateTime?
+  usuarioId   Int
+  usuario     Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  criado_em   DateTime  @default(now())
+
+  @@index([usuarioId, revoked_at])
+  @@index([expires_at])
+}
+
+model Notificacao {
+  id           Int       @id @default(autoincrement())
+  tipo         String    @db.VarChar(30)
+  titulo       String    @db.VarChar(160)
+  mensagem     String    @db.VarChar(1000)
+  lida         Boolean   @default(false)
+  enviada_em   DateTime?
+  usuarioId    Int
+  usuario      Usuario   @relation(fields: [usuarioId], references: [id])
+  criado_em    DateTime  @default(now())
+
+  @@index([usuarioId, lida, criado_em])
+}
