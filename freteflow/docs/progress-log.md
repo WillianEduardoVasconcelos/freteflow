@@ -354,19 +354,50 @@
 - Próximos passos do README reorganizados em etapas menores.
 - Este arquivo criado para registrar o progresso técnico.
 
+## 2026-08-19
+
+### Execução de Seed e Carga de Dados
+
+- Script `apps/api/prisma/seed.ts` executado via `npx tsx apps/api/prisma/seed.ts` diretamente no workspace `freteflow/`.
+- Carga de dados confirmada no PostgreSQL com usuário Admin (`admin@freteflow.com`), veículo de carga, motorista com CNH, cliente demo e contrato ativo.
+
+### Resolução de CORS e Estabilização de Rede
+
+- Identificado bloqueio de CORS no navegador para `POST /api/auth/login` (`Access-Control-Allow-Credentials: true` ausente durante requisições com cookies/credentials `include`).
+- `apps/api/src/middleware/security.middleware.ts` atualizado:
+  - Adicionado `credentials: true` explícito na configuração do pacote `cors`.
+  - Configurados métodos HTTP autorizados (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`).
+  - Liberados cabeçalhos essenciais de segurança (`Content-Type`, `Authorization`, `X-CSRF-Token`, `x-csrf-token`).
+  - Ordem dos middlewares ajustada: `cors` reposicionado no topo da cadeia para responder requisições de preflight (`OPTIONS`) antes da filtragem do `helmet` e do `rateLimit`.
+  - Configurado `helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } })`.
+
+### Tipagens TypeScript da API
+
+- Instalados os pacotes de definições de tipos `@types/express`, `@types/cookie-parser` e `@types/cors` como dependências de desenvolvimento no workspace da API.
+- Erros de compilação `TS7016` (declarações de módulo ausentes) e `TS7006` (tipagem implícita `any` nos parâmetros `_request` e `response` na rota `/health`) solucionados.
+- Servidor TypeScript do editor recarregado e diagnósticos limpos com zero erros.
+
+### Integração Full-Stack e Validação Visual
+
+- Servidor API (Express + Prisma) ativo em `http://localhost:3000`.
+- Servidor Web (Vite + React) ativo em `http://localhost:5173`.
+- Fluxo de autenticação testado com sucesso: login realizado com credenciais de administrador, geração de sessão JWT e persistência via cookies seguros.
+- Tela **Dashboard** validada visualmente com exibição de métricas operacionais zeradas (carteira limpa).
+- Tela **Clientes e Contratos** (`/clientes`) validada, renderizando com sucesso a empresa de demonstração e o contrato vinculado a partir do banco PostgreSQL.
+
 ## Próximas etapas
 
-1. Revisar dependências e vulnerabilidades do npm.
-2. Implementar atualização/resolução de ocorrências e armazenamento de anexos.
-3. Criar o front-end após a API principal estar estável.
+1. Realizar a simulação de ciclo de vida completo de um Frete pela interface web (cadastro, despacho para `em_transito` e encerramento como `entregue`).
+2. Elaborar documentação para portfólio no `README.md` (badges, arquitetura, stack técnica, capturas de tela e guia rápido de execução).
+3. Configurar ambiente de deploy em nuvem gratuita (PostgreSQL no Supabase/Neon, API no Render e Web na Vercel).
+4. Acompanhar atualizações de dependências do Prisma 7 referentes ao alerta do `deepmerge-ts`.
 
 ## Observações
 
 - O projeto deve continuar usando ferramentas gratuitas ou open source.
-- Os comandos Prisma devem ser executados a partir da raiz `freteflow/`.
+- Os comandos Prisma e scripts npm devem ser executados a partir do diretório `freteflow/`.
 - O arquivo `.env` nunca deve ser enviado ao GitHub ou compartilhado publicamente.
-- As vulnerabilidades reportadas pelo `npm install` ainda precisam ser avaliadas; não foi executado `npm audit fix --force`.
-- As dependências de segurança foram instaladas, mas o `npm install` continua reportando 3 vulnerabilidades altas; a correção forçada ainda não foi executada.
+- As vulnerabilidades reportadas pelo `npm install` continuam sob monitoramento; a correção forçada com downgrade não foi executada para preservar a compatibilidade com o Prisma 7.
 
 ## Regra de acompanhamento
 

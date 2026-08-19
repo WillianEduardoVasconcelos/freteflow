@@ -34,6 +34,9 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@vitejs/plugin-react": "^5.0.4",
     "prisma": "7.9.1",
     "supertest": "^7.1.4",

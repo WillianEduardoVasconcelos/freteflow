@@ -1,11 +1,32 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  // 1. Criar o Usuário Administrador para Login
+  const senhaCriptografada = await bcrypt.hash("Admin123!", 10);
+
+  const admin = await prisma.usuario.upsert({
+    where: { email: "admin@freteflow.com" },
+    update: {
+      senha_hash: senhaCriptografada,
+      perfil: "admin",
+      dois_fatores: false,
+    },
+    create: {
+      nome: "Administrador FreteFlow",
+      email: "admin@freteflow.com",
+      senha_hash: senhaCriptografada,
+      perfil: "admin",
+      dois_fatores: false,
+    },
+  });
+
+  // 2. Cliente Demonstração
   const cliente = await prisma.cliente.upsert({
     where: { documento: "00000000000100" },
     update: {},
@@ -17,6 +38,7 @@ async function main() {
     },
   });
 
+  // 3. Motorista Demonstração
   const motorista = await prisma.motorista.upsert({
     where: { numero_cnh: "00000000000" },
     update: {},
@@ -27,6 +49,7 @@ async function main() {
     },
   });
 
+  // 4. Veículo Demonstração
   const veiculo = await prisma.veiculo.upsert({
     where: { placa: "ABC1D23" },
     update: {},
@@ -51,6 +74,7 @@ async function main() {
     data: { motoristas: { connect: { id: motorista.id } } },
   });
 
+  // 5. Contrato Demonstração
   await prisma.contrato.upsert({
     where: { numero_contrato: "CONTRATO-DEMO-001" },
     update: {},
@@ -63,7 +87,7 @@ async function main() {
   });
 
   console.log(
-    "Seed concluído: cliente, motorista, veículo e contrato criados.",
+    "Seed concluído com sucesso: Usuário Admin criado (admin@freteflow.com)!",
   );
 }
 
