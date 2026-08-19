@@ -4,6 +4,15 @@
 
 ---
 
+---
+
+## 🌐 Acesso Rápido
+
+- 🖥️ **Aplicação Web (Produção):** [https://freteflow-seven.vercel.app](https://freteflow-seven.vercel.app)
+- ⚙️ **API Backend (Render):** [https://freteflow.onrender.com](https://freteflow.onrender.com)
+
+---
+
 ## 🚀 Funcionalidades Principais
 
 - **Painel de Gestão (Web):** Controle de frota (veículos, motoristas), clientes, contratos e despacho de fretes.
