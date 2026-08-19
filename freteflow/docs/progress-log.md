@@ -356,6 +356,23 @@
 
 ## 2026-08-19
 
+### Build Standalone Android (EAS) e Integração de Ponta a Ponta
+
+- **Configuração do Expo Application Services (EAS Build):**
+  - Autenticação e vinculação do projeto móvel à conta Expo do desenvolvedor (`@willianeduardo/mobile`).
+  - Configuração do identificador de pacote Android como `com.willianeduardo.mobile`.
+  - Geração e gerenciamento da credencial de assinatura (Android Keystore) automatizada via nuvem da Expo.
+- **Configuração do `eas.json`:**
+  - Perfil `preview` configurado com `"buildType": "apk"` em `apps/mobile/eas.json` para geração de instalador direto independente da Google Play Store.
+- **Compilação e Deploy em Nuvem:**
+  - Compilação realizada com sucesso nos servidores remotos do EAS (`npx eas-cli build --platform android --profile preview`).
+  - Pacote standalone `.apk` gerado, baixado e instalado com sucesso em dispositivo físico Android via QR Code.
+- **Validação do Fluxo Operacional Ponta a Ponta:**
+  - Login e autenticação no app mobile consumindo a API em produção no Render.
+  - Envio de telemetria GPS a partir do celular com atualização instantânea na interface web.
+  - Registro de ocorrência de rota pelo mobile persistido no banco e visualizado no painel administrativo.
+  - Conclusão de entrega via app mobile com transição imediata do status para `ENTREGUE` na tabela web.
+
 ### Execução de Seed e Carga de Dados
 
 - Script `apps/api/prisma/seed.ts` executado via `npx tsx apps/api/prisma/seed.ts` diretamente no workspace `freteflow/`.
@@ -413,12 +430,17 @@
   - O sistema encontra-se estável, sem quedas de conexão ou erros de `rate limit`.
   - O fluxo **Mobile (App) -> API -> Web (Dashboard)** está validado e sincronizado operacionalmente.
 
+### Customização Visual e Estabilização do App Mobile
+
+- Atualizado `apps/mobile/app.json` com nome oficial **FreteFlow**, tema escuro e ícones adaptativos Android.
+- Solucionada pendência de assets no prebuild (`adaptive-icon.png`).
+- Prebuild validado localmente com sucesso e novo build standalone (`.apk`) gerado via EAS Build.
+
 ## Próximas etapas
 
-1. Realizar a simulação de ciclo de vida completo de um segundo Frete (teste de estresse funcional).
-2. Atualizar o `README.md` principal com a arquitetura completa (API + Web + Mobile).
-3. Configurar ambiente de deploy em nuvem gratuita (Supabase/Neon, Render e Vercel).
-4. Acompanhar atualizações de dependências do Prisma 7 referentes ao alerta do `deepmerge-ts`.
+1. Realizar a simulação de ciclo de vida completo de múltiplos fretes simultâneos (teste de carga/concorrência).
+2. Configuração de pipeline CI/CD no GitHub Actions para validação e testes automatizados a cada push.
+3. Acompanhar atualizações de dependências do Prisma 7 referentes ao alerta do `deepmerge-ts`.
 
 ## Observações
 

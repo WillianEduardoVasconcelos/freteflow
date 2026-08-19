@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "71cdad3f-0870-459c-aebe-25e0e35bd6af"
+      }
+    },
+    "android": {
+      "package": "com.willianeduardo.freteflow"
+    }
+  }
+}
