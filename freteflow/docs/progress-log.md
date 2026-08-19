@@ -385,11 +385,23 @@
 - Tela **Dashboard** validada visualmente com exibição de métricas operacionais zeradas (carteira limpa).
 - Tela **Clientes e Contratos** (`/clientes`) validada, renderizando com sucesso a empresa de demonstração e o contrato vinculado a partir do banco PostgreSQL.
 
+### Módulo Mobile do Motorista (Expo & React Native)
+
+- **Criação do pacote `apps/mobile`:** Inicialização do ecossistema mobile com Expo SDK 57 e TypeScript.
+- **Portal do Motorista (Dark Mode):**
+  - Tela de autenticação com tratamento de sessão e fallback para demonstração.
+  - Painel de visualização da rota ativa (Origem, Destino, Carga, Peso e Placa do Veículo).
+  - Ação de **Check-in GPS** com registro de timestamp em tempo real.
+  - Disparo de **Registro de Ocorrências** para incidentes de trânsito e rotas.
+  - Finalização operacional de frete com atualização dinâmica do badge para `ENTREGUE`.
+- **Suporte Multiplataforma:** Configuração de dependências (`react-native-web`, `react-dom`, `@expo/metro-runtime`) permitindo execução em emulador mobile, celular físico (Expo Go) e navegador.
+- **Scripts:** Adicionado script `"mobile:dev"` no `package.json` raiz do monorepo.
+
 ## Próximas etapas
 
-1. Realizar a simulação de ciclo de vida completo de um Frete pela interface web (cadastro, despacho para `em_transito` e encerramento como `entregue`).
-2. Elaborar documentação para portfólio no `README.md` (badges, arquitetura, stack técnica, capturas de tela e guia rápido de execução).
-3. Configurar ambiente de deploy em nuvem gratuita (PostgreSQL no Supabase/Neon, API no Render e Web na Vercel).
+1. Realizar a simulação de ciclo de vida completo de um Frete pela interface web e mobile.
+2. Atualizar o `README.md` principal com a arquitetura completa (API + Web + Mobile).
+3. Configurar ambiente de deploy em nuvem gratuita (Supabase/Neon, Render e Vercel).
 4. Acompanhar atualizações de dependências do Prisma 7 referentes ao alerta do `deepmerge-ts`.
 
 ## Observações

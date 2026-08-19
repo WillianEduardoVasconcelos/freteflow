@@ -1,4 +1,9 @@
 {
+  "scripts": {
+    "api:dev": "npm run dev --prefix apps/api",
+    "web:dev": "npm run dev --prefix apps/web",
+    "mobile:dev": "npm run start --prefix apps/mobile"
+  },
   "devDependencies": {
     "@types/cors": "^2.8.19"
   }
