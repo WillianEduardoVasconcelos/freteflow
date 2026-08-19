@@ -1,8 +1,13 @@
-# 📦 FreteFlow - Ecossistema de Gestão Logística e Transporte
+<img width="2159" height="1459" alt="image" src="https://github.com/user-attachments/assets/1455c7be-c573-4376-9d7e-d62d55df3f8e" /># 📦 FreteFlow - Ecossistema de Gestão Logística e Transporte
 
 > Solução full-stack e mobile cloud-native para gestão de frotas, despacho de fretes, auditoria operacional e telemetria em tempo real.
 
 ---
+
+### 🌐 Conecte-se comigo:
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/willianeduardov/)
+[![Gmail](https://img.shields.io/badge/Gmail-D14836?style=for-the-badge&logo=gmail&logoColor=white)](mailto:willian.eduardo2010@gmail.com)
 
 ---
 
