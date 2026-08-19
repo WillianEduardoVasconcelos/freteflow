@@ -13,8 +13,7 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 
-const API_URL =
-  Platform.OS === "web" ? "http://localhost:3000" : "http://192.168.15.3:3000";
+const API_URL = "https://freteflow.onrender.com";
 
 export default function App() {
   const [token, setToken] = useState<string | null>(null);
